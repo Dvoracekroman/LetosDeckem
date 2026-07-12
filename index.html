@@ -401,6 +401,11 @@ async function dbPut(rec){try{const db=await idb();return await new Promise((res
 let STATE={};
 const blank=n=>({n,visited:false,who:'',note:'',photos:[]});
 const st=n=>STATE[n]||(STATE[n]=blank(n));
+const LS_KEY='states_v1';
+function lsLoad(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{};}catch(e){return {};}}
+function lsSaveOne(n){try{const m=lsLoad();const r=st(n);m[n]={visited:r.visited,who:r.who,note:r.note};localStorage.setItem(LS_KEY,JSON.stringify(m));}catch(e){}}
+function lsSaveAll(){try{const m={};for(const k in STATE){const r=STATE[k];m[k]={visited:r.visited,who:r.who,note:r.note};}localStorage.setItem(LS_KEY,JSON.stringify(m));}catch(e){}}
+
 const strip=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const $=s=>document.querySelector(s);
 const esc=s=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -510,7 +515,7 @@ function resize(file,max,q){return new Promise(res=>{const img=new Image(),rd=ne
   rd.onload=()=>{img.onload=()=>{let w=img.width,h=img.height;if(w>h&&w>max){h=h*max/w;w=max;}else if(h>max){w=w*max/h;h=max;}
     const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);res(c.toDataURL('image/jpeg',q));};img.src=rd.result;};rd.readAsDataURL(file);});}
 
-let saveT;function save(n,quiet){dbPut(st(n));if(!quiet)flashSaved();else{clearTimeout(saveT);saveT=setTimeout(flashSaved,400);}}
+let saveT;function save(n,quiet){dbPut(st(n));lsSaveOne(n);if(!quiet)flashSaved();else{clearTimeout(saveT);saveT=setTimeout(flashSaved,400);}}
 function flashSaved(){const s=$('#saved');if(!s)return;s.classList.add('on');setTimeout(()=>s.classList.remove('on'),1200);}
 
 $('#btnExport').onclick=async()=>{const all=await dbGetAll();
@@ -520,7 +525,7 @@ $('#btnImport').onclick=()=>$('#importFile').click();
 $('#importFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();
   rd.onload=async()=>{try{const j=JSON.parse(rd.result),arr=j.data||j;let c=0;
     for(const r of arr){if(r&&r.n!=null){STATE[r.n]={n:r.n,visited:!!r.visited,who:r.who||'',note:r.note||'',photos:r.photos||[]};await dbPut(STATE[r.n]);c++;}}
-    renderList();updateProgress();renderSuggest();if(mapReady)STATIONS.forEach(s=>refreshMarker(s.n));toast('Načteno '+c+' stanovišť ✓');
+    lsSaveAll();renderList();updateProgress();renderSuggest();if(mapReady)STATIONS.forEach(s=>refreshMarker(s.n));toast('Načteno '+c+' stanovišť ✓');
   }catch(err){toast('Soubor se nepodařilo načíst');}};rd.readAsText(f);e.target.value='';};
 
 $('#q').oninput=debounce(e=>{curQ=e.target.value;renderList();},170);
@@ -596,7 +601,13 @@ async function toggleAlerts(){const btn=$('#alertToggle');
 $('#alertToggle').onclick=toggleAlerts;
 $('#alertDist').onchange=e=>{ALERT_DIST=+e.target.value;savePlanner();alerted.clear();};
 
-(async function(){const all=await dbGetAll();all.forEach(r=>STATE[r.n]=r);loadPlanner();recompute();$('#radius').value=RADIUS;$('#alertDist').value=String(ALERT_DIST);$('#placeInput').value=CENTER.name;renderList();updateProgress();renderSuggest();updatePlannerUI();})();
+(async function(){
+  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
+  const ls=lsLoad();for(const k in ls){const n=+k;STATE[n]={n,visited:!!ls[k].visited,who:ls[k].who||'',note:ls[k].note||'',photos:[]};}
+  const all=await dbGetAll();all.forEach(r=>{STATE[r.n]=r;});
+  loadPlanner();recompute();$('#radius').value=RADIUS;$('#alertDist').value=String(ALERT_DIST);$('#placeInput').value=CENTER.name;
+  renderList();updateProgress();renderSuggest();updatePlannerUI();
+})();
 </script>
 </body>
 </html>
