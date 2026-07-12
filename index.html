@@ -69,7 +69,7 @@ a{color:var(--green-d)}
 .trip .kmb{background:#F3F0E7;border-radius:7px;padding:2px 7px;font-size:11.5px;color:var(--muted)}
 .trip .n{color:var(--green-d)}
 .medal{position:relative;flex:0 0 auto;width:132px;height:132px;display:grid;place-items:center}
-.medal svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.medal svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .medal .ctr{text-align:center;line-height:1}
 .medal .pct{font-family:'Baloo 2';font-weight:800;font-size:30px;color:var(--ink)}
 .medal .cap{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
@@ -359,7 +359,7 @@ input[type=range]{width:100%;accent-color:var(--green);height:30px}
     </div>
     <div class="maplegend">
       <span><span class="dot" style="background:#FF6A5A"></span>Ještě ne</span>
-      <span><span class="dot" style="background:#FFB020"></span>Máš razítko!</span>
+      <span><span class="dot" style="background:#12A67A"></span>Máš razítko!</span>
       <span><span class="dot" style="background:#8B6DEF"></span>Střed (odkud počítáš)</span>
       <span><span class="dot" style="background:#3FA9F5"></span>Tvoje poloha (GPS)</span>
     </div>
@@ -440,11 +440,11 @@ function renderList(){const box=$('#list');box.innerHTML='';const a=visible();
   const f=document.createDocumentFragment();a.forEach((s,i)=>f.appendChild(card(s,i)));box.appendChild(f);}
 
 let map,markers={},mapReady=false,userMarker=null,liveMarker=null;
-const mColor=n=>st(n).visited?'#FFB020':'#FF6A5A';
+const mColor=n=>st(n).visited?'#12A67A':'#FF6A5A';
 function initMap(){if(mapReady)return;
   if(typeof L==='undefined'){$('#map').innerHTML='<div style="padding:26px;text-align:center;font-weight:800;color:#7B8794;line-height:1.6">🗺️ Mapu se nepodařilo načíst.<br>Zkontroluj připojení k internetu a načti stránku znovu.<br><span style="font-weight:700;font-size:13px">(Mapa potřebuje internet — nefunguje z lokálního souboru bez připojení.)</span></div>';return;}
   map=L.map('map',{scrollWheelZoom:true,zoomControl:true,tap:true}).setView([49.78,15.5],7);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'© OpenStreetMap, © CARTO'}).addTo(map);
   STATIONS.forEach(s=>{const m=L.circleMarker([s.lat,s.lon],{radius:st(s.n).visited?7:6,weight:2.5,color:'#fff',fillColor:mColor(s.n),fillOpacity:1});
     m.bindPopup(`<div class="pop"><b>#${s.n} ${esc(s.name)}</b><div class="pm">${s._km+' km od '+esc(CENTER.name)}</div><button onclick="openDetail(${s.n})">Otevřít detail</button></div>`);
     m.addTo(map);markers[s.n]=m;});
@@ -534,7 +534,7 @@ addEventListener('keydown',e=>{if(e.key==='Escape')closeDetail();});
 /* tab switching (top tabs + bottom nav in sync) */
 function switchTab(t){
   document.querySelectorAll('.tab,[data-tab]').forEach(x=>{if(x.dataset.tab)x.classList.toggle('on',x.dataset.tab===t);});
-  $('#view-list').style.display=t==='list'?'':'none';$('#view-map').style.display=t==='map'?'':'none';
+  $('#view-list').style.display=t==='list'?'block':'none';$('#view-map').style.display=t==='map'?'block':'none';
   document.body.classList.toggle('map-open',t==='map');
   if(t==='map'){initMap();if(map)setTimeout(()=>{try{map.invalidateSize();}catch(e){}},80);try{scrollTo({top:0});}catch(e){}}}
 document.querySelectorAll('.tabs .tab, .bnav button').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
